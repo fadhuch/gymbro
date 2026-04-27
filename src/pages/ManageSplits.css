@@ -87,7 +87,18 @@
   font-size: 0.92rem;
 }
 
-.template-controls select,
+.template-picker-field {
+  display: grid;
+  gap: 0.4rem;
+  position: relative;
+}
+
+.template-picker-label {
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--ms-text);
+}
+
 .split-form input,
 .split-form select {
   border: 1px solid #cfdcd4;
@@ -96,6 +107,77 @@
   font-size: 0.95rem;
   color: var(--ms-text);
   background: #fff;
+}
+
+.variation-picker-trigger {
+  width: 100%;
+  border: 1px solid #cfdcd4;
+  border-radius: 10px;
+  background: #fff;
+  padding: 0.65rem 0.8rem;
+  min-height: 42px;
+  color: #355147;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.variation-picker-trigger:hover:not(:disabled) {
+  border-color: var(--ms-primary);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.08);
+}
+
+.variation-picker-trigger:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.variation-picker-caret {
+  color: #6b7f77;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.variation-picker-menu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  background: #fff;
+  border: 1px solid #cfdcd4;
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.14);
+  z-index: 50;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.variation-picker-option {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid #eef3f0;
+  background: transparent;
+  padding: 0.65rem 0.8rem;
+  color: #355147;
+  text-align: left;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.variation-picker-option:last-child {
+  border-bottom: none;
+}
+
+.variation-picker-option:hover,
+.variation-picker-option.active {
+  background: #f0faf7;
 }
 
 .template-preview {
@@ -446,6 +528,10 @@
   align-items: center;
 }
 
+.alternative-picker-field {
+  min-width: 0;
+}
+
 .alternative-row .remove-btn {
   justify-self: end;
 }
@@ -454,15 +540,6 @@
   font-size: 0.8rem;
   color: var(--ms-subtle);
   width: 58px;
-}
-
-.alternative-row select {
-  border: 1px solid #cfdcd4;
-  border-radius: 10px;
-  padding: 0.68rem 0.75rem;
-  font-size: 0.93rem;
-  width: 100%;
-  min-width: 0;
 }
 
 .save-action-bar {

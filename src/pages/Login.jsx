@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Login.css';
 
@@ -60,6 +61,9 @@ function Login() {
             {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
+        <p className="login-footer">
+          Don&apos;t have an account? <Link to="/register">Sign up</Link>
+        </p>
       </div>
     </div>
   );

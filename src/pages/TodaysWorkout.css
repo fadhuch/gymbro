@@ -522,6 +522,70 @@
   width: 100%;
 }
 
+.slide-variation-field {
+  display: grid;
+  gap: 0.35rem;
+  position: relative;
+}
+
+.variation-picker-trigger {
+  width: 100%;
+  border: 1px solid #cfdcd4;
+  border-radius: 10px;
+  background: #fff;
+  padding: 0.6rem 0.75rem;
+  min-height: 40px;
+  color: #355147;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.variation-picker-caret {
+  color: #6b7f77;
+  font-size: 0.86rem;
+}
+
+.variation-picker-menu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  background: #fff;
+  border: 1px solid #cfdcd4;
+  border-radius: 10px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
+  z-index: 25;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.variation-picker-option {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid #eef3f0;
+  background: transparent;
+  padding: 0.62rem 0.72rem;
+  color: #355147;
+  text-align: left;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.variation-picker-option:last-child {
+  border-bottom: none;
+}
+
+.variation-picker-option:hover,
+.variation-picker-option.active {
+  background: #f0faf7;
+}
+
 .slide-stage-field input,
 .slide-stage-field select {
   width: 100%;

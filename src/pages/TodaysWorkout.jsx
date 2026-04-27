@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
@@ -18,6 +18,8 @@ function TodaysWorkout() {
   const [isSlideOpen, setIsSlideOpen] = useState(false);
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const [detailSlideIndex, setDetailSlideIndex] = useState(0);
+  const [isVariationMenuOpen, setIsVariationMenuOpen] = useState(false);
+  const variationMenuRef = useRef(null);
   const [todaysWorkout, setTodaysWorkout] = useState({
     title: '',
     dayLabel: '',
@@ -290,6 +292,32 @@ function TodaysWorkout() {
   }, [completedExercises.length, todaysWorkout.exercises.length]);
 
   const activeSlideExercise = todaysWorkout.exercises[activeSlideIndex] || null;
+  const activeSelectedOption = activeSlideExercise ? getSelectedOption(activeSlideExercise) : null;
+  const activeEmbedUrl = getYoutubeEmbedUrl(activeSelectedOption?.videoUrl || '');
+
+  useEffect(() => {
+    if (!isVariationMenuOpen) {
+      return undefined;
+    }
+
+    const handleOutsideClick = (event) => {
+      if (variationMenuRef.current && !variationMenuRef.current.contains(event.target)) {
+        setIsVariationMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('touchstart', handleOutsideClick);
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('touchstart', handleOutsideClick);
+    };
+  }, [isVariationMenuOpen]);
+
+  useEffect(() => {
+    setIsVariationMenuOpen(false);
+  }, [activeSlideIndex, detailSlideIndex, isSlideOpen]);
 
   const renderExerciseCard = (exercise, index, isSlide = false) => {
     const selectedOption = getSelectedOption(exercise);
@@ -444,14 +472,15 @@ function TodaysWorkout() {
           ) : (
             <>
               {(() => {
-                const selectedOption = getSelectedOption(activeSlideExercise);
-                const embedUrl = getYoutubeEmbedUrl(selectedOption?.videoUrl || '');
+                const selectedOption = activeSelectedOption;
+                const embedUrl = activeEmbedUrl;
                 const detailSlideCount = 3;
                 return (
                   <div className="slide-view-wrapper video-first-slide">
                     <div className="slide-hero">
                       {embedUrl ? (
                         <iframe
+                          key={embedUrl}
                           src={embedUrl}
                           title={`${selectedOption?.name || 'Workout'} video`}
                           loading="lazy"
@@ -512,19 +541,45 @@ function TodaysWorkout() {
                         {detailSlideIndex === 0 && (
                           <>
                             {(activeSlideExercise.options || []).length > 1 ? (
-                              <label className="weight-input-group slide-stage-field">
-                                Choose Variation
-                                <select
-                                  value={selectedOptions[activeSlideExercise.id] || activeSlideExercise.options?.[0]?.workoutId || ''}
-                                  onChange={(e) => handleOptionChange(activeSlideExercise.id, e.target.value)}
+                              <div className="weight-input-group slide-stage-field slide-variation-field" ref={variationMenuRef}>
+                                <span>Choose Variation</span>
+                                <button
+                                  type="button"
+                                  className="variation-picker-trigger"
+                                  aria-haspopup="listbox"
+                                  aria-expanded={isVariationMenuOpen}
+                                  onClick={() => setIsVariationMenuOpen((prev) => !prev)}
                                 >
-                                  {(activeSlideExercise.options || []).map((option) => (
-                                    <option key={`${activeSlideExercise.id}-${option.workoutId}`} value={option.workoutId}>
-                                      {option.name} {option.muscleGroup ? `• ${option.muscleGroup}` : ''}
-                                    </option>
-                                  ))}
-                                </select>
-                              </label>
+                                  {selectedOption?.name || 'Select variation'}
+                                  <span className="variation-picker-caret" aria-hidden="true">▾</span>
+                                </button>
+
+                                {isVariationMenuOpen && (
+                                  <div className="variation-picker-menu" role="listbox" aria-label="Choose workout variation">
+                                    {(activeSlideExercise.options || []).map((option) => {
+                                      const isSelected = String(option.workoutId) === String(
+                                        selectedOptions[activeSlideExercise.id] || activeSlideExercise.options?.[0]?.workoutId || ''
+                                      );
+
+                                      return (
+                                        <button
+                                          key={`${activeSlideExercise.id}-${option.workoutId}`}
+                                          type="button"
+                                          role="option"
+                                          aria-selected={isSelected}
+                                          className={`variation-picker-option ${isSelected ? 'active' : ''}`}
+                                          onClick={() => {
+                                            handleOptionChange(activeSlideExercise.id, option.workoutId);
+                                            setIsVariationMenuOpen(false);
+                                          }}
+                                        >
+                                          {option.name} {option.muscleGroup ? `• ${option.muscleGroup}` : ''}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
                             ) : (
                               <div className="slide-static-field">
                                 <span className="slide-static-label">Selected Variation</span>

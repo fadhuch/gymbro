@@ -113,7 +113,7 @@ textarea {
     z-index: 300;
     width: min(420px, calc(100% - 1.2rem));
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     align-items: center;
     gap: 0.2rem;
     padding: 0.35rem;
@@ -139,9 +139,13 @@ textarea {
   }
 
   .mobile-nav-btn.priority {
-    background: rgba(15, 118, 110, 0.2);
+    background: linear-gradient(135deg, #0f766e 0%, #0f8f84 100%);
     color: #ffffff;
-    border: 1px solid rgba(76, 220, 199, 0.45);
+    border: 1.5px solid rgba(76, 220, 199, 0.55);
+    width: 3.5rem;
+    height: 3.5rem;
+    box-shadow: 0 4px 14px rgba(15, 118, 110, 0.45);
+    margin-top: -0.45rem;
   }
 
   .mobile-nav-btn:hover {
@@ -156,9 +160,9 @@ textarea {
 
   .mobile-nav-btn.priority.active {
     background: #ffffff;
-    color: #111827;
+    color: #0f766e;
     border-color: rgba(255, 255, 255, 0.95);
-    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.26);
+    box-shadow: 0 6px 18px rgba(15, 118, 110, 0.4);
   }
 
   .mobile-nav-icon {
@@ -187,5 +191,10 @@ textarea {
   .mobile-nav-btn.active .mobile-nav-icon svg circle,
   .mobile-nav-btn.active .mobile-nav-icon svg rect {
     stroke: #111827;
+  }
+
+  .mobile-nav-btn.priority .mobile-nav-icon {
+    width: 1.55rem;
+    height: 1.55rem;
   }
 }

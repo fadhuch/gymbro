@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import api from '../api/axios';
 import './ManageSplits.css';
 
@@ -44,6 +44,10 @@ function ManageSplits() {
   const [applyingTemplate, setApplyingTemplate] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isTemplateMenuOpen, setIsTemplateMenuOpen] = useState(false);
+  const [activeWorkoutMenuKey, setActiveWorkoutMenuKey] = useState('');
+  const templateMenuRef = useRef(null);
+  const workoutMenuRef = useRef(null);
 
   const splitMap = useMemo(
     () => new Map(splits.map((split) => [split.dayOfWeek, split])),
@@ -99,6 +103,28 @@ function ManageSplits() {
   }, []);
 
   useEffect(() => {
+    if (!isTemplateMenuOpen) return;
+    const handleOutsideClick = (event) => {
+      if (templateMenuRef.current && !templateMenuRef.current.contains(event.target)) {
+        setIsTemplateMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [isTemplateMenuOpen]);
+
+  useEffect(() => {
+    if (!activeWorkoutMenuKey) return;
+    const handleOutsideClick = (event) => {
+      if (workoutMenuRef.current && !workoutMenuRef.current.contains(event.target)) {
+        setActiveWorkoutMenuKey('');
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [activeWorkoutMenuKey]);
+
+  useEffect(() => {
     if (!templates.length) {
       setSelectedTemplateId('');
       return;
@@ -130,6 +156,8 @@ function ManageSplits() {
 
   useEffect(() => {
     const existing = splitMap.get(selectedDay);
+
+    setActiveWorkoutMenuKey('');
 
     if (existing) {
       setTitle(existing.title || '');
@@ -169,6 +197,16 @@ function ManageSplits() {
         };
       })
     );
+  };
+
+  const getWorkoutOptionLabel = (workoutId) => {
+    const selectedWorkout = workouts.find((workout) => String(workout._id) === String(workoutId || ''));
+
+    if (!selectedWorkout) {
+      return 'Select workout';
+    }
+
+    return `${selectedWorkout.name}${selectedWorkout.muscleGroup ? ` • ${selectedWorkout.muscleGroup}` : ''}`;
   };
 
   const addWorkoutOption = (exerciseIndex) => {
@@ -294,21 +332,40 @@ function ManageSplits() {
             </div>
 
             <div className="template-controls">
-              <label>
-                Choose template
-                <select
-                  value={selectedTemplateId}
-                  onChange={(e) => setSelectedTemplateId(e.target.value)}
+              <div className="template-picker-field" ref={templateMenuRef}>
+                <span className="template-picker-label">Choose template</span>
+                <button
+                  type="button"
+                  className="variation-picker-trigger"
+                  aria-haspopup="listbox"
+                  aria-expanded={isTemplateMenuOpen}
                   disabled={!templates.length}
+                  onClick={() => setIsTemplateMenuOpen((prev) => !prev)}
                 >
-                  {!templates.length && <option value="">No templates available</option>}
-                  {templates.map((template) => (
-                    <option key={template.id} value={template.id}>
-                      {template.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  {templates.find((t) => t.id === selectedTemplateId)?.name
+                    || (templates.length ? 'Select a template' : 'No templates available')}
+                  <span className="variation-picker-caret" aria-hidden="true">▾</span>
+                </button>
+                {isTemplateMenuOpen && (
+                  <div className="variation-picker-menu" role="listbox" aria-label="Choose split template">
+                    {templates.map((template) => (
+                      <button
+                        key={template.id}
+                        type="button"
+                        role="option"
+                        aria-selected={template.id === selectedTemplateId}
+                        className={`variation-picker-option${template.id === selectedTemplateId ? ' active' : ''}`}
+                        onClick={() => {
+                          setSelectedTemplateId(template.id);
+                          setIsTemplateMenuOpen(false);
+                        }}
+                      >
+                        {template.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <button
                 type="button"
                 className="submit-btn"
@@ -479,18 +536,62 @@ function ManageSplits() {
                     {exercise.workoutIds.map((workoutId, optionIndex) => (
                       <div key={`${selectedDay}-${index}-${optionIndex}`} className="alternative-row">
                         <span className="alternative-label">Option {optionIndex + 1}</span>
-                        <select
-                          value={workoutId}
-                          onChange={(e) => updateWorkoutOption(index, optionIndex, e.target.value)}
-                          required
+                        <div
+                          className="template-picker-field alternative-picker-field"
+                          ref={activeWorkoutMenuKey === `${selectedDay}-${index}-${optionIndex}` ? workoutMenuRef : null}
                         >
-                          <option value="">Select workout</option>
-                          {workouts.map((workout) => (
-                            <option key={String(workout._id)} value={String(workout._id)}>
-                              {workout.name} • {workout.muscleGroup}
-                            </option>
-                          ))}
-                        </select>
+                          <button
+                            type="button"
+                            className="variation-picker-trigger"
+                            aria-haspopup="listbox"
+                            aria-expanded={activeWorkoutMenuKey === `${selectedDay}-${index}-${optionIndex}`}
+                            onClick={() =>
+                              setActiveWorkoutMenuKey((prev) =>
+                                prev === `${selectedDay}-${index}-${optionIndex}` ? '' : `${selectedDay}-${index}-${optionIndex}`
+                              )
+                            }
+                          >
+                            {getWorkoutOptionLabel(workoutId)}
+                            <span className="variation-picker-caret" aria-hidden="true">▾</span>
+                          </button>
+
+                          {activeWorkoutMenuKey === `${selectedDay}-${index}-${optionIndex}` && (
+                            <div className="variation-picker-menu" role="listbox" aria-label={`Choose workout for option ${optionIndex + 1}`}>
+                              <button
+                                type="button"
+                                role="option"
+                                aria-selected={!workoutId}
+                                className={`variation-picker-option${!workoutId ? ' active' : ''}`}
+                                onClick={() => {
+                                  updateWorkoutOption(index, optionIndex, '');
+                                  setActiveWorkoutMenuKey('');
+                                }}
+                              >
+                                Select workout
+                              </button>
+                              {workouts.map((workout) => {
+                                const value = String(workout._id);
+                                const isSelected = value === String(workoutId || '');
+
+                                return (
+                                  <button
+                                    key={value}
+                                    type="button"
+                                    role="option"
+                                    aria-selected={isSelected}
+                                    className={`variation-picker-option${isSelected ? ' active' : ''}`}
+                                    onClick={() => {
+                                      updateWorkoutOption(index, optionIndex, value);
+                                      setActiveWorkoutMenuKey('');
+                                    }}
+                                  >
+                                    {workout.name}{workout.muscleGroup ? ` • ${workout.muscleGroup}` : ''}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                         <button
                           type="button"
                           className="remove-btn"

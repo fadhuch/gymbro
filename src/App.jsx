@@ -3,6 +3,9 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { AuthProvider, useAuth } from './context/AuthContext';
 import MobileBottomNav from './components/MobileBottomNav';
 import Login from './pages/Login';
+import Register from './pages/Register';
+import Profile from './pages/Profile';
+import AdminUsers from './pages/AdminUsers';
 import Dashboard from './pages/Dashboard';
 import TodaysWorkout from './pages/TodaysWorkout';
 import AddWorkout from './pages/AddWorkout';
@@ -52,6 +55,32 @@ function PrivateRoute({ children }) {
   return isAuthenticated ? children : <Navigate to="/login" />;
 }
 
+// For routes that require active membership (user role only)
+function MemberRoute({ children }) {
+  const { isAuthenticated, isMembershipActive, loading } = useAuth();
+
+  if (loading) {
+    return <div className="app-loading-screen">Loading...</div>;
+  }
+
+  if (!isAuthenticated) return <Navigate to="/login" />;
+  if (!isMembershipActive) return <Navigate to="/profile" />;
+  return children;
+}
+
+// For super admin-only pages
+function SuperAdminRoute({ children }) {
+  const { isAuthenticated, user, loading } = useAuth();
+
+  if (loading) {
+    return <div className="app-loading-screen">Loading...</div>;
+  }
+
+  if (!isAuthenticated) return <Navigate to="/login" />;
+  if (user?.role !== 'super admin') return <Navigate to="/dashboard" />;
+  return children;
+}
+
 function PublicRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
 
@@ -68,21 +97,30 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+          <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+          <Route
+            path="/profile"
+            element={<PrivateRoute><PrivateShell><Profile /></PrivateShell></PrivateRoute>}
+          />
           <Route
             path="/dashboard"
-            element={<PrivateRoute><PrivateShell><Dashboard /></PrivateShell></PrivateRoute>}
+            element={<MemberRoute><PrivateShell><Dashboard /></PrivateShell></MemberRoute>}
           />
           <Route
             path="/workout/today"
-            element={<PrivateRoute><PrivateShell><TodaysWorkout /></PrivateShell></PrivateRoute>}
+            element={<MemberRoute><PrivateShell><TodaysWorkout /></PrivateShell></MemberRoute>}
           />
           <Route
             path="/workout/new"
-            element={<PrivateRoute><PrivateShell><AddWorkout /></PrivateShell></PrivateRoute>}
+            element={<MemberRoute><PrivateShell><AddWorkout /></PrivateShell></MemberRoute>}
           />
           <Route
             path="/workout/splits"
-            element={<PrivateRoute><PrivateShell><ManageSplits /></PrivateShell></PrivateRoute>}
+            element={<MemberRoute><PrivateShell><ManageSplits /></PrivateShell></MemberRoute>}
+          />
+          <Route
+            path="/admin/users"
+            element={<SuperAdminRoute><PrivateShell><AdminUsers /></PrivateShell></SuperAdminRoute>}
           />
           <Route path="/" element={<Navigate to="/dashboard" />} />
         </Routes>

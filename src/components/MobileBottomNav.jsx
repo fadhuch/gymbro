@@ -1,10 +1,17 @@
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
-const NAV_ITEMS = [
+const REGULAR_NAV = [
   { path: '/dashboard', label: 'Dashboard', icon: 'home' },
-  { path: '/workout/today', label: "Today's Plan", icon: 'plan', priority: true },
   { path: '/workout/new', label: 'Workouts', icon: 'plus' },
+  { path: '/workout/today', label: "Today's Plan", icon: 'plan', priority: true },
   { path: '/workout/splits', label: 'Splits', icon: 'grid' },
+  { path: '/profile', label: 'Profile', icon: 'person' },
+];
+
+const ADMIN_NAV = [
+  { path: '/admin/users', label: 'Members', icon: 'users' },
+  { path: '/profile', label: 'Profile', icon: 'person' },
 ];
 
 const NavIcon = ({ type }) => {
@@ -33,6 +40,26 @@ const NavIcon = ({ type }) => {
     );
   }
 
+  if (type === 'users') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="9" cy="7" r="3" />
+        <path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" />
+        <circle cx="17" cy="8" r="2.2" />
+        <path d="M21 20c0-2.5-1.8-4.5-4-4.5" />
+      </svg>
+    );
+  }
+
+  if (type === 'person') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="7.5" r="3.5" />
+        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+      </svg>
+    );
+  }
+
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <circle cx="7" cy="7" r="1.6" />
@@ -46,9 +73,13 @@ const NavIcon = ({ type }) => {
 function MobileBottomNav() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
+
+  const NAV_ITEMS = user?.role === 'super admin' ? ADMIN_NAV : REGULAR_NAV;
 
   return (
-    <div className="mobile-bottom-nav" role="navigation" aria-label="Quick workout navigation">
+    <div className="mobile-bottom-nav" role="navigation" aria-label="Quick workout navigation"
+      style={{ gridTemplateColumns: `repeat(${NAV_ITEMS.length}, minmax(0, 1fr))` }}>
       {NAV_ITEMS.map((item) => {
         const isActive = location.pathname === item.path;
 

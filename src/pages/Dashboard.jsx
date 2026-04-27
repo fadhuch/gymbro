@@ -8,14 +8,15 @@ function Dashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [checkingIn, setCheckingIn] = useState(false);
   const [error, setError] = useState('');
   const [dashboard, setDashboard] = useState({
     checkedInToday: false,
+    checkedInAt: null,
     stats: [],
-    progressImageUrl:
-      'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&h=600&fit=crop',
     progress: [],
     recentWorkouts: [],
+    motivation: null,
   });
 
   const fetchDashboard = async () => {
@@ -36,131 +37,205 @@ function Dashboard() {
 
   const handleCheckIn = async () => {
     try {
+      setCheckingIn(true);
       setError('');
       const response = await api.post('/dashboard/check-in');
       setDashboard(response.data.dashboard);
     } catch (apiError) {
       setError(apiError?.response?.data?.message || 'Check-in failed');
+    } finally {
+      setCheckingIn(false);
     }
   };
 
+  const getInitials = () => {
+    const first = user?.firstname?.[0] || '';
+    const last = user?.lastname?.[0] || '';
+    return (first + last).toUpperCase();
+  };
+
+  const getDayGreeting = () => {
+    const h = new Date().getHours();
+    if (h < 12) return 'Good morning';
+    if (h < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  const getTodayLabel = () =>
+    new Date().toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+    });
+
+  const formatCheckedInTime = (dateStr) => {
+    if (!dateStr) return '';
+    return new Date(dateStr).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  };
+
+  const streakStat = dashboard.stats.find((s) => s.label === 'Streak Days');
+  const streakCount = Number(streakStat?.value || 0);
+
   if (loading) {
-    return <div className="dashboard-container"><div className="dashboard-content">Loading dashboard...</div></div>;
+    return (
+      <div className="dashboard-container">
+        <div className="db-loading">
+          <div className="db-loading-spinner" />
+          <p>Loading your stats…</p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="dashboard-container">
       <nav className="dashboard-nav">
         <div className="nav-brand">
-          <h2>💪 GymBro</h2>
+          <span className="nav-logo-icon">💪</span>
+          <span className="nav-logo-text">GymBro</span>
         </div>
         <div className="nav-user">
-          <span className="user-name">{user?.firstname} {user?.lastname}</span>
-          <button onClick={logout} className="logout-btn">Logout</button>
+          <div className="nav-avatar" title={`${user?.firstname} ${user?.lastname}`}>
+            {getInitials()}
+          </div>
+          <button onClick={logout} className="logout-btn">Sign out</button>
         </div>
       </nav>
 
       <div className="dashboard-content">
-        <div className="welcome-section">
-          <h1>Welcome back, {user?.firstname}! 👋</h1>
-          <p>Ready to crush your fitness goals today?</p>
-          {error && <p style={{ color: '#dc2626', marginTop: '0.5rem' }}>{error}</p>}
+
+        {/* Header */}
+        <div className="db-header">
+          <p className="db-date">{getTodayLabel()}</p>
+          <h1 className="db-greeting">{getDayGreeting()}, {user?.firstname}!</h1>
+          <p className="db-subtext">
+            {dashboard.checkedInToday
+              ? "You're already crushing it — keep going 🔥"
+              : 'Ready to make today count?'}
+          </p>
+          {error && <p className="db-error">{error}</p>}
         </div>
 
-        <div className="quick-actions">
-          <button 
-            onClick={handleCheckIn} 
-            className={`action-btn ${dashboard.checkedInToday ? 'checked-in' : 'check-in-btn'}`}
-            disabled={dashboard.checkedInToday}
-          >
-            <span className="action-emoji" aria-hidden="true">🕒</span>
-            <span className="action-label">{dashboard.checkedInToday ? 'Checked In' : 'Clock In'}</span>
-          </button>
-          <button
-            onClick={() => navigate('/workout/today')}
-            className="action-btn workout-btn desktop-only-action"
-          >
-            <span className="action-emoji" aria-hidden="true">🏋️</span>
-            <span className="action-label">Today&apos;s Plan</span>
-          </button>
-          <button 
-            onClick={() => navigate('/workout/new')}
-            className="action-btn workout-btn desktop-only-action"
-          >
-            <span className="action-emoji" aria-hidden="true">➕</span>
-            <span className="action-label">Workouts</span>
-          </button>
-          <button
-            onClick={() => navigate('/workout/splits')}
-            className="action-btn workout-btn desktop-only-action"
-          >
-            <span className="action-emoji" aria-hidden="true">🗓️</span>
-            <span className="action-label">Splits</span>
-          </button>
+        {/* Check-In Hero Card */}
+        <div className={`checkin-card${dashboard.checkedInToday ? ' is-checked-in' : ''}`}>
+          <div className="checkin-card-left">
+            <div className="checkin-status-icon">
+              {dashboard.checkedInToday ? '✅' : '🏋️'}
+            </div>
+            <div className="checkin-text">
+              <p className="checkin-label">
+                {dashboard.checkedInToday ? 'YOU\'RE IN THE GYM' : 'READY TO TRAIN?'}
+              </p>
+              <p className="checkin-sublabel">
+                {dashboard.checkedInToday
+                  ? `Checked in at ${formatCheckedInTime(dashboard.checkedInAt)} — session is live`
+                  : 'Tap to log your gym visit for today'}
+              </p>
+            </div>
+          </div>
+          <div className="checkin-card-right">
+            {streakCount > 0 && (
+              <div className="checkin-streak">
+                <span className="streak-fire">🔥</span>
+                <span className="streak-count">{streakCount}</span>
+                <span className="streak-label">day{streakCount !== 1 ? 's' : ''}</span>
+              </div>
+            )}
+            {!dashboard.checkedInToday ? (
+              <button
+                onClick={handleCheckIn}
+                className="checkin-btn"
+                disabled={checkingIn}
+              >
+                {checkingIn ? 'Checking in…' : 'Check In Now'}
+              </button>
+            ) : (
+              <button
+                onClick={() => navigate('/workout/today')}
+                className="goto-workout-btn"
+              >
+                Today's Plan →
+              </button>
+            )}
+          </div>
         </div>
 
+        {/* Daily Motivation */}
+        {dashboard.motivation?.quote && (
+          <div className="motivation-card">
+            <span className="motivation-tag">Daily Motivation</span>
+            <blockquote className="motivation-quote">
+              "{dashboard.motivation.quote}"
+            </blockquote>
+            <p className="motivation-author">— {dashboard.motivation.author}</p>
+          </div>
+        )}
+
+        {/* Stats */}
         <div className="stats-grid">
           {dashboard.stats.map((stat, index) => (
             <div key={index} className="stat-card">
               <div className="stat-icon">{stat.icon}</div>
-              <div className="stat-info">
-                <div className="stat-value">{stat.value}</div>
-                <div className="stat-label">{stat.label}</div>
-              </div>
+              <div className="stat-value">{stat.value}</div>
+              <div className="stat-label">{stat.label}</div>
             </div>
           ))}
         </div>
 
-        <div className="progress-section">
-          <h2>Your Progress</h2>
-          <div className="progress-image-container">
-            <div className="progress-image">
-              <img 
-                src={dashboard.progressImageUrl}
-                alt="Gym Progress"
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  e.target.parentElement.innerHTML = '<div class="placeholder-img">📊 Progress Chart</div>';
-                }}
-              />
-            </div>
-            <div className="progress-details">
-              <h3>Monthly Overview</h3>
-              {dashboard.progress.map((item, index) => (
-                <div key={index} className="progress-item">
-                  <span>{item.label}</span>
-                  <div className="progress-bar">
-                    <div className="progress-fill" style={{ width: `${item.percent}%` }}></div>
-                  </div>
-                  <span className="progress-percent">{item.percent}%</span>
-                </div>
-              ))}
-            </div>
+        {/* Recent Workouts */}
+        <div className="db-section">
+          <div className="db-section-header">
+            <h2 className="db-section-title">Recent Sessions</h2>
+            <button className="db-section-link" onClick={() => navigate('/workout/today')}>
+              View plan →
+            </button>
           </div>
-        </div>
-
-        <div className="workouts-section">
-          <h2>Recent Workouts</h2>
           <div className="workouts-list">
-            {dashboard.recentWorkouts.map((workout, index) => (
-              <div key={index} className="workout-card">
-                <div className="workout-icon">{workout.image}</div>
-                <div className="workout-info">
-                  <h3>{workout.name}</h3>
-                  <p>{workout.date} • {workout.duration}</p>
+            {dashboard.recentWorkouts.length > 0 ? (
+              dashboard.recentWorkouts.map((workout, index) => (
+                <div key={index} className="workout-row">
+                  <div className="workout-row-icon">{workout.image}</div>
+                  <div className="workout-row-info">
+                    <p className="workout-row-name">{workout.name}</p>
+                    <p className="workout-row-meta">{workout.date} · {workout.duration}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
-            {dashboard.recentWorkouts.length === 0 && (
-              <div className="workout-card">
-                <div className="workout-info">
-                  <h3>No workouts yet</h3>
-                  <p>Start a session to see your live history here.</p>
-                </div>
+              ))
+            ) : (
+              <div className="db-empty-state">
+                <span className="db-empty-icon">🏋️</span>
+                <p>No sessions yet — check in to start logging your progress!</p>
               </div>
             )}
           </div>
         </div>
+
+        {/* Monthly Progress */}
+        {dashboard.progress.length > 0 && (
+          <div className="db-section">
+            <h2 className="db-section-title">Monthly Progress</h2>
+            <div className="progress-card">
+              {dashboard.progress.map((item, index) => (
+                <div key={index} className="progress-row">
+                  <div className="progress-row-top">
+                    <span className="progress-row-label">{item.label}</span>
+                    <span className="progress-row-pct">{item.percent}%</span>
+                  </div>
+                  <div className="progress-track">
+                    <div
+                      className="progress-fill"
+                      style={{ width: `${item.percent}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
