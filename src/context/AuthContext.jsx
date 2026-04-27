@@ -14,6 +14,7 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [membership, setMembership] = useState(null);
+  const [membershipLoaded, setMembershipLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const fetchAndStoreMembership = async () => {
@@ -22,6 +23,8 @@ export const AuthProvider = ({ children }) => {
       setMembership(res.data.user?.membership ?? null);
     } catch {
       // silently ignore — membership stays null
+    } finally {
+      setMembershipLoaded(true);
     }
   };
 
@@ -33,12 +36,15 @@ export const AuthProvider = ({ children }) => {
 
       if (accessToken && storedUser) {
         try {
+          setMembershipLoaded(false);
           setUser(JSON.parse(storedUser));
           await fetchAndStoreMembership();
         } catch (error) {
           console.error('Failed to parse stored user:', error);
           logout();
         }
+      } else {
+        setMembershipLoaded(true);
       }
       setLoading(false);
     };
@@ -57,6 +63,7 @@ export const AuthProvider = ({ children }) => {
 
       const userData = { role, firstname, lastname, priority, email: data.email };
       localStorage.setItem('user', JSON.stringify(userData));
+      setMembershipLoaded(false);
       setUser(userData);
       await fetchAndStoreMembership();
 
@@ -86,6 +93,7 @@ export const AuthProvider = ({ children }) => {
       };
 
       localStorage.setItem('user', JSON.stringify(userData));
+      setMembershipLoaded(false);
       setUser(userData);
       await fetchAndStoreMembership();
 
@@ -102,6 +110,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('user');
     setUser(null);
     setMembership(null);
+    setMembershipLoaded(true);
   };
 
   // true if role is not 'user', OR if membership is active and not expired
@@ -116,6 +125,7 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     membership,
+    membershipLoaded,
     isMembershipActive,
     loading,
     login,

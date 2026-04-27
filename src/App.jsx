@@ -57,13 +57,16 @@ function PrivateRoute({ children }) {
 
 // For routes that require active membership (user role only)
 function MemberRoute({ children }) {
-  const { isAuthenticated, isMembershipActive, loading } = useAuth();
+  const { isAuthenticated, isMembershipActive, membershipLoaded, user, loading } = useAuth();
 
   if (loading) {
     return <div className="app-loading-screen">Loading...</div>;
   }
 
   if (!isAuthenticated) return <Navigate to="/login" />;
+  if (user?.role === 'user' && !membershipLoaded) {
+    return <div className="app-loading-screen">Loading...</div>;
+  }
   if (!isMembershipActive) return <Navigate to="/profile" />;
   return children;
 }
@@ -82,13 +85,23 @@ function SuperAdminRoute({ children }) {
 }
 
 function PublicRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, isMembershipActive, membershipLoaded, user, loading } = useAuth();
 
   if (loading) {
     return <div className="app-loading-screen">Loading...</div>;
   }
 
-  return !isAuthenticated ? children : <Navigate to="/dashboard" />;
+  if (!isAuthenticated) {
+    return children;
+  }
+
+  if (user?.role === 'user' && !membershipLoaded) {
+    return <div className="app-loading-screen">Loading...</div>;
+  }
+
+  const shouldGoToProfile = user?.role === 'user' && !isMembershipActive;
+
+  return <Navigate to={shouldGoToProfile ? '/profile' : '/dashboard'} />;
 }
 
 function App() {
